@@ -21,10 +21,10 @@ path_data = "..."
 path_outputs= "..."
 
 # Data for each of tissue-masks is obtained from the datacube () and the masks () provided
-mask_A_apckras = np.genfromtxt(path_data + "mask_A_apckras.csv",delimiter=",")
-mask_D_apckras = np.genfromtxt(path_data+"mask_D_apckras.csv",delimiter=",")
-mask_C_apc = np.genfromtxt(path_data+"mask_C_apc.csv",delimiter=",")
-mask_G_apc = np.genfromtxt(path_data+"mask_G_apc.csv",delimiter=",")
+mask_A_apckras = np.genfromtxt(path_data + "mask_A_RVARPCAR1Z47B.csv",delimiter=",")
+mask_D_apckras = np.genfromtxt(path_data+"mask_D_RVARPBR1WG5J.csv",delimiter=",")
+mask_C_apc = np.genfromtxt(path_data+"mask_C_RVARPCAR1Z44B.csv",delimiter=",")
+mask_G_apc = np.genfromtxt(path_data+"mask_G_RVARPBR1W94A.csv",delimiter=",")
 
 #Concatenation of similar tumour types
 mask_D_apckras = mask_D_apckras[:,1:]
@@ -73,7 +73,7 @@ df_volcano_fdr = df_volcano.copy()
 #Correcting FDR with Benjamini-Hochberg procedure
 fdr_p = df_volcano["p_values"]
 fdr_p = np.asarray(fdr_p)
-fdr, p_corrected, alpha1, alpha2 = sm.multipletests(fdr_p, 0.05, method='fdr_bh', is_sorted=False)
+fdr, p_corrected, alpha1, alpha2 = sm.multipletests(fdr_p, 0.1, method='fdr_bh', is_sorted=False)
 
 #Insert outputs of FDR
 df_volcano_fdr.insert(5, 'fdr_bh APC to APC/KRAS', fdr)
@@ -82,33 +82,10 @@ df_volcano_fdr.insert(7, "-log10(adjusted p-value)", -np.log10(p_corrected))
 df_volcano_fdr['sign adjusted'] = 'not significant'
 
 #Significance criteria
-df_volcano_fdr.loc[(df_volcano_fdr['-log10(adjusted p-value)'] > -np.log10(0.05)) & (
+df_volcano_fdr.loc[(df_volcano_fdr['-log10(adjusted p-value)'] > -np.log10(0.1)) & (
         df_volcano_fdr['log2(FC)'] > np.log2(1.5)), 'sign adjusted'] = 'up regulated in apc-kras'
-df_volcano_fdr.loc[(df_volcano_fdr['-log10(adjusted p-value)'] > -np.log10(0.05)) & (
+df_volcano_fdr.loc[(df_volcano_fdr['-log10(adjusted p-value)'] > -np.log10(0.1)) & (
         df_volcano_fdr['log2(FC)'] < -np.log2(1.5)), 'sign adjusted'] = 'down regulated in apc-kras'
 
-df_volcano_fdr.to_excel(path_outputs + "APC_APCKRAS_ttest_fdr_q0.05.xlsx", index=False)
+df_volcano_fdr.to_excel(path_outputs + "APC_APCKRAS_ttest_fdr_q0.1.xlsx", index=False)
 print("!Results saved in: " + path_outputs)
-
-#Creating volcano plot
-print('Creating volcano plot...')
-xaxis_lim = np.absolute(df_volcano_fdr['log2(FC)']).max(axis=0)*1.1
-fig = px.scatter(df_volcano_fdr,x='log2(FC)',y='-log10(adjusted p-value)',color='sign adjusted',
-                 hover_data=['m/z'],color_discrete_map={'not significant':'grey',
-        'up regulated in apc-kras':'blue','down regulated in apc-kras':'red'},
-                 labels={"sign adjusted p-value":"",
-                         "not significant":"Not Significant",
-                         "up regulated in apc-kras":"Up regulated in APC/KRAS",
-                        'down regulated in apc-kras':'Down regulated in APC/KRAS'})
-
-fig.update_xaxes(range=[-xaxis_lim,xaxis_lim])
-fig.update_layout(font=dict(size = 18))
-fig.add_hline(y=-np.log10(0.05), line_width=1, line_dash="dash", line_color="grey")
-fig.add_vline(x=-np.log2(1.5), line_width=1, line_dash="dash", line_color="grey")
-fig.add_vline(x=np.log2(1.5), line_width=1, line_dash="dash", line_color="grey")
-fig.show()
-fig.write_html(path_outputs + "volcano_APC_APCKRAS_ttest_fdr.html")
-fig.write_image(path_outputs + "volcano_APC_APCKRAS_ttest_fdr.png")
-print("!Figure saved in: " + path_outputs)
-
-print("!Finished")
